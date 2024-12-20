@@ -1,16 +1,64 @@
-# Social-Media-platform
-The provided code establishes a basic framework for a social platform using Node.js and Express. Here’s a breakdown of its components:
+Social media
+const express = require('express');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-Dependencies: The code utilizes Express for server management and Mongoose for MongoDB interactions. Body-parser is used to parse incoming request bodies.
+// Middleware
+app.use(bodyParser.json());
 
-MongoDB Connection: The application connects to a MongoDB database named socialPlatform, which will store user data.
+// MongoDB connection
+mongoose.connect('mongodb://localhost/socialPlatform', { useNewUrlParser: true, useUnifiedTopology: true });
 
-User Schema: A Mongoose schema defines the structure of user data, including fields for username, password, email, profile picture, and bio.
+// User Schema
+const userSchema = new mongoose.Schema({
+    username: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    profilePicture: String,
+    bio: String,
+});
 
-User Registration: The /register endpoint allows new users to create an account. It accepts a JSON payload containing the username, password, and email, and saves the new user to the database.
+const User = mongoose.model('User', userSchema);
 
-User Login: The /login endpoint authenticates users by checking the provided credentials against the database. If successful, it returns a success message; otherwise, it returns an error.
+// User Registration
+app.post('/register', async (req, res) => {
+    const { username, password, email } = req.body;
+    const newUser = new User({ username, password, email });
+    await newUser.save();
+    res.status(201).send('User registered successfully');
+});
 
-Privacy Policy Endpoint: The /privacy-policy endpoint serves a simple privacy policy outlining how user data is collected, used, and protected. This is crucial for building trust with users.
+// User Login
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username, password });
+    if (user) {
+        res.status(200).send('Login successful');
+    } else {
+        res.status(401).send('Invalid credentials');
+    }
+});
 
-Server Initialization: Finally, the server listens on a specified port, allowing it to handle incoming requests.
+// Privacy Policy Endpoint
+app.get('/privacy-policy', (req, res) => {
+    const privacyPolicy = `
+    ## Privacy Policy
+
+    Your privacy is important to us. This policy outlines how we collect, use, and protect your information.
+
+    - **Information Collection**: We collect information you provide directly, such as your username and email.
+    - **Use of Information**: We use your information to provide and improve our services.
+    - **Data Protection**: We implement security measures to protect your information.
+    - **User Rights**: You have the right to access, correct, or delete your personal information.
+
+    For more details, please contact us.
+    `;
+    res.send(privacyPolicy);
+});
+
+// Start the server
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
